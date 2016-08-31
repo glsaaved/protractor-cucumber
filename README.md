@@ -1,7 +1,7 @@
-protractor-cucumber
-==============
+# Protractor-Cucumber
+Protractor-cucumber allows one to drive protractor tests using cucumber, this fork allows you to choose between multiple windows or just a unique window for all your features.
 
-protractor-cucumber allows one to drive protractor tests using cucumber
+This is a fork project, Thanks to AndrewKeig , available in https://github.com/AndrewKeig/protractor-cucumber
 
 ## Installation
 
@@ -48,11 +48,25 @@ var pc = require('protractor-cucumber');
 
 var steps = function() {
   var seleniumAddress = 'http://localhost:4444/wd/hub';
-  var options = { browser : 'chrome', timeout : 100000 };
+  var options = { browser : 'chrome', timeout : 100000, uniqueBrowser:true };
   this.World = pc.world(seleniumAddress, options);
 
-  this.After(function(scenario, callback) {
-    this.quit(callback);
+  this.After(function (scenario, callback) {
+          if(scenario.isFailed()){
+              this.browser.takeScreenshot().then(function (buffer) {
+                 scenario.attach(new Buffer(buffer, 'base64'), 'image/png');
+              });
+          };
+          if(!options.uniqueBrowser){
+            this.quit(callback);
+          }
+          else{
+             callback();
+          }
+
+  });
+  this.After({tags: ["@final"]}, function (scenario, callback) {
+      this.quit(callback);
   });
 };
 
@@ -196,3 +210,8 @@ Specifies a baseurl to be used within your tests
 Specifies a properties object; stick whatever you like in there
 ### desiredCapabilities
 Desired Capabilities passed to Selenium; Arbitrary object whose keys are capability names.  Is merged with capabilites created for `browser` or can be used instead of `browser`.
+### uniqueBrowser
+Specify if all scenarios are running in a different instance of 'browser'(false) or just in a unique 'browser' (true)
+
+##Important:
+If you use the uniqueBrowser feature, the last scenario in the features needs the tag `@final`, with this clean the resources and the instance of webdriver
